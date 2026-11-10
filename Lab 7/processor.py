@@ -1,5 +1,5 @@
 """
-processor.py - Hardened Blood Donation Screening Module
+processor.py - Hardened Blood Donation Screening Module (Interactive UI)
 """
 
 def validate_blood_type(blood_code):
@@ -107,11 +107,53 @@ def parse_donor_registry(donor_entry):
     }
 
 
+def main_menu():
+    """Interactive User Interface"""
+    while True:
+        print("\n==============================================")
+        print("  BLOOD DONATION SCREENING SYSTEM - MENU")
+        print("==============================================")
+        print("1. Validate Blood Type (e.g., O+, AB-)")
+        print("2. Calculate Pulse Pressure (e.g., 120/80)")
+        print("3. Parse Donor Registry Record (e.g., D101|70.5|14.2)")
+        print("4. Exit")
+        print("----------------------------------------------")
+        
+        choice = input("Select an option (1-4): ").strip()
+        
+        if choice == '1':
+            user_input = input("\nEnter blood type code: ")
+            try:
+                result = validate_blood_type(user_input)
+                print(f"[SUCCESS] Validated Blood Type: {result}")
+            except (ValueError, TypeError) as e:
+                print(f"[ERROR] Invalid Input: {e}")
+
+        elif choice == '2':
+            user_input = input("\nEnter blood pressure (Systolic/Diastolic, e.g., 120/80): ")
+            try:
+                result = calculate_pulse_pressure(user_input)
+                print(f"[SUCCESS] Pulse Pressure: {result} mmHg")
+            except (ValueError, TypeError) as e:
+                print(f"[ERROR] Invalid Input: {e}")
+
+        elif choice == '3':
+            user_input = input("\nEnter donor record (DonorID|WeightKg|Hemoglobin): ")
+            try:
+                result = parse_donor_registry(user_input)
+                print(f"[SUCCESS] Parsed Record:")
+                print(f"  - Donor ID   : {result['donor_id']}")
+                print(f"  - Weight (kg): {result['weight_kg']}")
+                print(f"  - Hemoglobin : {result['hemoglobin']}")
+            except (ValueError, TypeError) as e:
+                print(f"[ERROR] Invalid Input: {e}")
+
+        elif choice == '4':
+            print("\nExiting program. Goodbye!")
+            break
+        else:
+            print("[ERROR] Invalid choice. Please enter a number between 1 and 4.")
+
+
 if __name__ == "__main__":
-    print("--- Testing Hardened Blood Donation Processor ---")
-    try:
-        print(f"validate_blood_type('O+') -> {validate_blood_type('O+')}")
-        print(f"calculate_pulse_pressure('120/80') -> {calculate_pulse_pressure('120/80')}")
-        print(f"parse_donor_registry('D101|70.5|14.2') -> {parse_donor_registry('D101|70.5|14.2')}")
-    except Exception as e:
-        print(f"Error: {e}")
+    main_menu()
