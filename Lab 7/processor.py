@@ -1,50 +1,117 @@
+"""
+processor.py - Hardened Blood Donation Screening Module
+"""
+
 def validate_blood_type(blood_code):
     """
-    Standardizes blood group and Rh factor (e.g. 'O+', 'AB-').
-    Assumes non-empty string with ABO antigen and +/- sign.
+    Validates and formats blood group string (e.g., 'A+', 'O-', 'AB+').
+    Raises ValueError or TypeError for invalid, missing, or malformed inputs.
     """
+    if blood_code is None:
+        raise TypeError("Blood code cannot be None.")
+    if not isinstance(blood_code, str):
+        raise TypeError(f"Expected string input, got {type(blood_code).__name__}.")
+
     cleaned = blood_code.strip().upper()
-    antigen = cleaned[:-1]
+    if not cleaned:
+        raise ValueError("Blood code cannot be empty.")
+
+    rh_map = {'+': 'Positive', '-': 'Negative'}
     rh_char = cleaned[-1]
-    rh_map = {"+": "Positive", "-": "Negative"}
+
+    if rh_char not in rh_map:
+        raise ValueError(f"Invalid Rh factor symbol in code: '{rh_char}'")
+
+    antigen = cleaned[:-1]
+    valid_antigens = {'A', 'B', 'AB', 'O'}
+    if antigen not in valid_antigens:
+        raise ValueError(f"Invalid antigen group: '{antigen}'")
+
     return f"{antigen} {rh_map[rh_char]}"
 
-def calculate_pulse_pressure(bp_string):
+
+def calculate_pulse_pressure(sys_dia_pair):
     """
-    Calculates pulse pressure (systolic - diastolic) and arterial ratio.
-    Assumes string format 'systolic/diastolic' (e.g. '120/80').
+    Calculates pulse pressure given (systolic, diastolic) values or 'sys/dia' string.
+    Raises ValueError or TypeError for missing, malformed, or invalid inputs.
     """
-    sys_str, dia_str = bp_string.split('/')
-    systolic = int(sys_str)
-    diastolic = int(dia_str)
-    pulse_diff = systolic - diastolic
-    ratio = round(systolic / diastolic, 2)
-    return f"Diff: {pulse_diff}, Ratio: {ratio}"
+    if sys_dia_pair is None:
+        raise TypeError("Input cannot be None.")
+
+    # Handle string formatted as "120/80"
+    if isinstance(sys_dia_pair, str):
+        cleaned = sys_dia_pair.strip()
+        if not cleaned or '/' not in cleaned:
+            raise ValueError("String input must be formatted as 'systolic/diastolic'.")
+        parts = cleaned.split('/')
+        if len(parts) != 2:
+            raise ValueError("Invalid format for systolic/diastolic pair.")
+        try:
+            sys_val = float(parts[0].strip())
+            dia_val = float(parts[1].strip())
+        except ValueError:
+            raise ValueError("Systolic and diastolic values must be numeric.")
+    # Handle tuple/list input like (120, 80)
+    elif isinstance(sys_dia_pair, (list, tuple)):
+        if len(sys_dia_pair) != 2:
+            raise ValueError("Expected exactly 2 elements (systolic, diastolic).")
+        try:
+            sys_val = float(sys_dia_pair[0])
+            dia_val = float(sys_dia_pair[1])
+        except (ValueError, TypeError):
+            raise ValueError("Systolic and diastolic values must be numeric.")
+    else:
+        raise TypeError(f"Unsupported type: {type(sys_dia_pair).__name__}")
+
+    if sys_val < dia_val:
+        raise ValueError("Systolic pressure cannot be less than diastolic pressure.")
+
+    return sys_val - dia_val
+
 
 def parse_donor_registry(donor_entry):
     """
     Parses pipe-delimited record: 'DonorID|WeightKg|Hemoglobin'.
-    Assumes valid 3-token pipe-separated string.
+    Handles missing fields, malformed numbers, None, and empty inputs cleanly.
     """
-    fields = donor_entry.split('|')
+    if donor_entry is None:
+        raise TypeError("Donor entry cannot be None.")
+    if not isinstance(donor_entry, str):
+        raise TypeError(f"Expected string input, got {type(donor_entry).__name__}.")
+
+    cleaned = donor_entry.strip()
+    if not cleaned:
+        raise ValueError("Donor entry cannot be empty.")
+
+    fields = cleaned.split('|')
+    if len(fields) != 3:
+        raise ValueError("Donor record must contain exactly 3 pipe-separated fields (DonorID|WeightKg|Hemoglobin).")
+
     donor_id = fields[0].strip()
-    weight = float(fields[1])
-    hemoglobin = float(fields[2])
-    eligible = weight >= 50.0 and hemoglobin >= 12.5
-    return f"Donor {donor_id}: {'Eligible' if eligible else 'Deferred'}"
+    if not donor_id:
+        raise ValueError("Donor ID cannot be empty.")
 
-def main():
-    print("==== Running validate_blood_type ====")
-    b_input = input("Enter blood type (e.g. A+, O-, AB+): ")
-    print("Validated:", validate_blood_type(b_input))
+    try:
+        weight = float(fields[1].strip())
+        hemoglobin = float(fields[2].strip())
+    except ValueError:
+        raise ValueError("Weight and Hemoglobin must be valid numerical values.")
 
-    print("\n==== Running calculate_pulse_pressure ====")
-    bp_input = input("Enter BP (e.g. 120/80): ")
-    print("BP Metrics:", calculate_pulse_pressure(bp_input))
+    if weight <= 0 or hemoglobin <= 0:
+        raise ValueError("Weight and Hemoglobin values must be positive.")
 
-    print("\n==== Running parse_donor_registry ====")
-    d_input = input("Enter record (ID|Weight|Hemoglobin): ")
-    print("Status:", parse_donor_registry(d_input))
+    return {
+        "donor_id": donor_id,
+        "weight_kg": weight,
+        "hemoglobin": hemoglobin
+    }
+
 
 if __name__ == "__main__":
-    main()
+    print("--- Testing Hardened Blood Donation Processor ---")
+    try:
+        print(f"validate_blood_type('O+') -> {validate_blood_type('O+')}")
+        print(f"calculate_pulse_pressure('120/80') -> {calculate_pulse_pressure('120/80')}")
+        print(f"parse_donor_registry('D101|70.5|14.2') -> {parse_donor_registry('D101|70.5|14.2')}")
+    except Exception as e:
+        print(f"Error: {e}")
